@@ -8,14 +8,48 @@ on:
 
 jobs:
   build-publish:
-    uses: halkeye/halkeye/.github/workflows/build-upstream-docker.yaml@master
-    secrets: inherit
+    runs-on: ubuntu-latest
+    env:
+      SHA: 1dfbd27cce9784a1bb7e2f85441473c1506647d6
+      UPSTREMAM_REPO: https://tangled.org/tranquil.farm/tranquil-pds
     permissions:
       contents: write
       packages: write
-    with:
-      upstream_version: "1dfbd27cce9784a1bb7e2f85441473c1506647d6"
-      upstream_repo: "https://tangled.org/tranquil.farm/tranquil-pds"
-      run_number: "${{ github.run_number }}"
-      username: "${{ github.repository_owner }}"
-      repository: "${{ github.repository }}"
+    steps:
+      - name: checkout
+        run: |
+          git clone "${UPSTREMAM_REPO}" .
+          git checkout "${SHA}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: "ghcr.io/${{ github.repository }}"
+          labels: |
+            org.opencontainers.image.source=${{ env.UPSTREMAM_REPO }}
+            org.opencontainers.image.url=${{ env.UPSTREMAM_REPO }}
+            org.opencontainers.image.revision=${{ env.SHA }}
+            org.opencontainers.image.version=${{ env.SHA }}
+          tags: |
+            type=raw,value="${{ github.run_number }}"
+            type=raw,value="sha-${{ env.SHA }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
