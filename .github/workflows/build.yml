@@ -10,8 +10,8 @@ jobs:
   build-publish:
     runs-on: ubuntu-latest
     env:
-      SHA: 1dfbd27cce9784a1bb7e2f85441473c1506647d6
-      UPSTREMAM_REPO: https://tangled.org/tranquil.farm/tranquil-pds
+      SHA: 3cb904c8bafc99bcee827e55e603cc2e6032fcf8
+      UPSTREMAM_REPO: https://tangled.org/halkeye.net/tranquil-pds
     permissions:
       contents: write
       packages: write
